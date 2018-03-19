@@ -1,3 +1,17 @@
 plugins {
   id 'java'
 }
+
+repositories {
+  jcenter()
+}
+
+dependencies {
+  testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
+  testRuntime 'org.junit.platform:junit-platform-launcher:1.1.0'
+  testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+}
+
+test {
+  useJUnitPlatform()
+}
