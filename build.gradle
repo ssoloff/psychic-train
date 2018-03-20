@@ -7,6 +7,10 @@ repositories {
 }
 
 dependencies {
+  compile 'com.google.guava:guava:24.1-jre'
+  compile 'org.eclipse.jdt:org.eclipse.jdt.annotation:2.1.100'
+  testCompile 'nl.jqno.equalsverifier:equalsverifier:2.4.4'
+  testCompile 'org.hamcrest:hamcrest-junit:2.0.0.0'
   testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
   testRuntime 'org.junit.platform:junit-platform-launcher:1.1.0'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'

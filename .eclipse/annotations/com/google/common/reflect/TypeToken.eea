@@ -1,0 +1,4 @@
+class com/google/common/reflect/TypeToken
+of
+ <T:Ljava/lang/Object;>(Ljava/lang/Class<TT;>;)Lcom/google/common/reflect/TypeToken<TT;>;
+ <T:Ljava/lang/Object;>(Ljava/lang/Class<TT;>;)L1com/google/common/reflect/TypeToken<TT;>;
