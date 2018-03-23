@@ -1,0 +1,4 @@
+class java/util/Optional
+ifPresentOrElse
+ (Ljava/util/function/Consumer<-TT;>;Ljava/lang/Runnable;)V
+ (Ljava/util/function/Consumer<-T1T;>;Ljava/lang/Runnable;)V

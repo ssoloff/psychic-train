@@ -2,12 +2,12 @@ package io.github.ssoloff.psychictrain.internal.engine;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
 
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 
 import io.github.ssoloff.psychictrain.api.engine.Broker;
 import io.github.ssoloff.psychictrain.api.engine.Publisher;
@@ -33,15 +33,10 @@ final class DefaultBroker implements Broker {
   }
 
   void publish(final PublisherId publisherId, final Object value) {
-    // TODO: replace with Optional#ifPresentOrElse
     // FIXME: need to be able to detect cycles and abort them
-    final @Nullable PublisherEntry publisherEntry = publisherEntriesById.get(publisherId);
-    if (publisherEntry == null) {
-      logger.warning("attempt to publish value by unregistered publisher (" + publisherId + ")");
-      return;
-    }
-
-    notifySubscribers(publisherEntry.topic);
+    Optional.ofNullable(publisherEntriesById.get(publisherId)).ifPresentOrElse(
+        publisherEntry -> notifySubscribers(publisherEntry.topic),
+        () -> logger.warning("attempt to publish value by unregistered publisher (" + publisherId + ")"));
   }
 
   @Override
