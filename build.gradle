@@ -1,5 +1,5 @@
 plugins {
-  id 'java'
+  id 'java-library'
 }
 
 repositories {
@@ -10,15 +10,15 @@ repositories {
 }
 
 dependencies {
-  compile 'com.google.guava:guava:24.1-jre'
-  compile 'org.eclipse.jdt:org.eclipse.jdt.annotation:2.1.100'
-  testCompile 'com.github.junit-team.junit5-samples:junit5-mockito-extension:e9b64bd'
-  testCompile 'javax.inject:javax.inject:1'
-  testCompile 'nl.jqno.equalsverifier:equalsverifier:2.4.5'
-  testCompile 'org.hamcrest:hamcrest-junit:2.0.0.0'
+  api 'com.google.guava:guava:24.1-jre'
+  api 'org.eclipse.jdt:org.eclipse.jdt.annotation:2.1.100'
+  testImplementation 'com.github.junit-team.junit5-samples:junit5-mockito-extension:e9b64bd'
+  testImplementation 'javax.inject:javax.inject:1'
+  testImplementation 'nl.jqno.equalsverifier:equalsverifier:2.4.5'
+  testImplementation 'org.hamcrest:hamcrest-junit:2.0.0.0'
   testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
-  testRuntime 'org.junit.platform:junit-platform-launcher:1.1.0'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.1.0'
 }
 
 test {
