@@ -1,5 +1,5 @@
+// TODO: change this package to .engine.api
 package io.github.ssoloff.psychictrain.engine;
 
-public class Entity {
-
+public interface Entity {
 }

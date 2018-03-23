@@ -15,6 +15,8 @@ public abstract class TopicMatcher {
     return new MultipleTopicMatcher(namePattern, typeToken);
   }
 
+  // TODO: eventually need an override that accepts a varargs array of topics of
+  // wildcard type
   public static TopicMatcher forSingle(final Topic<?> topic) {
     return new SingleTopicMatcher(topic);
   }

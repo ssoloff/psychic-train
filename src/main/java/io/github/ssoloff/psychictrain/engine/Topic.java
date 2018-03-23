@@ -4,13 +4,14 @@ import java.util.Objects;
 
 import javax.annotation.concurrent.Immutable;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.reflect.TypeToken;
 
 @Immutable
-public final class Topic<T> {
+public final class Topic<@NonNull T> {
   private final String name;
   private final TypeToken<T> typeToken;
 
@@ -44,8 +45,12 @@ public final class Topic<T> {
     return Objects.hash(name, typeToken);
   }
 
-  public static <T> Topic<T> of(final String name, final TypeToken<T> typeToken) {
+  public static <@NonNull T> Topic<T> of(final String name, final TypeToken<T> typeToken) {
     return new Topic<>(name, typeToken);
+  }
+
+  public static <@NonNull T> Topic<T> of(final String name, final Class<T> type) {
+    return of(name, TypeToken.of(type));
   }
 
   @Override

@@ -1,0 +1,4 @@
+class org/mockito/Mockito
+verify
+ <T:Ljava/lang/Object;>(TT;Lorg/mockito/verification/VerificationMode;)TT;
+ <T:Ljava/lang/Object;>(TT;Lorg/mockito/verification/VerificationMode;)T1T;
