@@ -1,4 +1,4 @@
-package io.github.ssoloff.psychictrain.engine.impl;
+package io.github.ssoloff.psychictrain.internal.engine;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -9,16 +9,16 @@ import javax.annotation.concurrent.Immutable;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import io.github.ssoloff.psychictrain.engine.Broker;
-import io.github.ssoloff.psychictrain.engine.Publisher;
-import io.github.ssoloff.psychictrain.engine.PublisherFactory;
-import io.github.ssoloff.psychictrain.engine.PublisherToken;
-import io.github.ssoloff.psychictrain.engine.Subscriber;
-import io.github.ssoloff.psychictrain.engine.SubscriberContext;
-import io.github.ssoloff.psychictrain.engine.SubscriberFactory;
-import io.github.ssoloff.psychictrain.engine.SubscriberToken;
-import io.github.ssoloff.psychictrain.engine.Topic;
-import io.github.ssoloff.psychictrain.engine.TopicMatcher;
+import io.github.ssoloff.psychictrain.api.engine.Broker;
+import io.github.ssoloff.psychictrain.api.engine.Publisher;
+import io.github.ssoloff.psychictrain.api.engine.PublisherFactory;
+import io.github.ssoloff.psychictrain.api.engine.PublisherToken;
+import io.github.ssoloff.psychictrain.api.engine.Subscriber;
+import io.github.ssoloff.psychictrain.api.engine.SubscriberContext;
+import io.github.ssoloff.psychictrain.api.engine.SubscriberFactory;
+import io.github.ssoloff.psychictrain.api.engine.SubscriberToken;
+import io.github.ssoloff.psychictrain.api.engine.Topic;
+import io.github.ssoloff.psychictrain.api.engine.TopicMatcher;
 
 final class DefaultBroker implements Broker {
   private static final Logger logger = Logger.getLogger(DefaultBroker.class.getName());

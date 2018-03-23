@@ -1,4 +1,4 @@
-package io.github.ssoloff.psychictrain.engine;
+package io.github.ssoloff.psychictrain.api.engine;
 
 import javax.annotation.concurrent.Immutable;
 

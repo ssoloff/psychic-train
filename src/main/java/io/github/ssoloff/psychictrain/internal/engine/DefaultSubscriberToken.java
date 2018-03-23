@@ -1,11 +1,11 @@
-package io.github.ssoloff.psychictrain.engine.impl;
+package io.github.ssoloff.psychictrain.internal.engine;
 
 import javax.annotation.concurrent.Immutable;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import io.github.ssoloff.psychictrain.engine.Subscriber;
-import io.github.ssoloff.psychictrain.engine.SubscriberToken;
+import io.github.ssoloff.psychictrain.api.engine.Subscriber;
+import io.github.ssoloff.psychictrain.api.engine.SubscriberToken;
 
 @Immutable
 final class DefaultSubscriberToken<@NonNull S extends Subscriber> implements SubscriberToken<S> {

@@ -1,4 +1,4 @@
-package io.github.ssoloff.psychictrain.engine;
+package io.github.ssoloff.psychictrain.api.engine;
 
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
