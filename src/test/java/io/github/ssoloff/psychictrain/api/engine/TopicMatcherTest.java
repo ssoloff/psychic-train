@@ -16,7 +16,40 @@ public final class TopicMatcherTest {
 
   @Nested
   public final class MultipleTopicMatcherTest {
-    private final TopicMatcher topicMatcher = TopicMatcher.forMultiple(Pattern.compile("name\\..+"), typeToken);
+    private final String name1 = "name1";
+    private final String name2 = "name2";
+    private final TopicMatcher topicMatcher = TopicMatcher.forTopics(
+        Topic.of(name1, typeToken),
+        Topic.of(name2, typeToken));
+
+    @Test
+    public void shouldMatchTopicWithSameNameAndSameTypeToken() {
+      assertThat(topicMatcher.matches(Topic.of(name1, typeToken)), is(true));
+      assertThat(topicMatcher.matches(Topic.of(name2, typeToken)), is(true));
+    }
+
+    @Test
+    public void shouldNotMatchTopicWithSameNameButDifferentTypeToken() {
+      assertThat(topicMatcher.matches(Topic.of(name1, otherTypeToken)), is(false));
+      assertThat(topicMatcher.matches(Topic.of(name2, otherTypeToken)), is(false));
+    }
+
+    @Test
+    public void shouldNotMatchTopicWithSameTypeTokenButDifferentName() {
+      assertThat(topicMatcher.matches(Topic.of("otherName", typeToken)), is(false));
+    }
+
+    @Test
+    public void shouldNotMatchTopicWithDifferentNameAndDifferentTypeToken() {
+      assertThat(topicMatcher.matches(Topic.of("otherName", otherTypeToken)), is(false));
+    }
+  }
+
+  @Nested
+  public final class NamePatternTopicMatcherTest {
+    private final TopicMatcher topicMatcher = TopicMatcher.forTopicsMatchingPattern(
+        Pattern.compile("name\\..+"),
+        typeToken);
 
     @Test
     public void shouldMatchTopicWithMatchingNameAndSameTypeToken() {
@@ -43,7 +76,7 @@ public final class TopicMatcherTest {
   @Nested
   public final class SingleTopicMatcherTest {
     private final String name = "name";
-    private final TopicMatcher topicMatcher = TopicMatcher.forSingle(Topic.of(name, typeToken));
+    private final TopicMatcher topicMatcher = TopicMatcher.forTopic(Topic.of(name, typeToken));
 
     @Test
     public void shouldMatchTopicWithSameNameAndSameTypeToken() {

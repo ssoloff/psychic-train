@@ -26,16 +26,22 @@ final class DefaultBroker implements Broker {
   private final Map<PublisherId, PublisherEntry> publisherEntriesById = new IdentityHashMap<>();
   private final Map<SubscriberId, SubscriberEntry> subscriberEntriesById = new IdentityHashMap<>();
 
-  private void notifySubscribers(final Topic<?> topic) {
+  private void notifySubscriberForAllMatchingTopics(final SubscriberEntry subscriberEntry) {
+    publisherEntriesById.values().stream()
+        .filter(publisherEntry -> subscriberEntry.topicMatcher.matches(publisherEntry.topic))
+        .forEach(publisherEntry -> subscriberEntry.subscriber.topicChanged(publisherEntry.topic));
+  }
+
+  private void notifySubscribersForTopic(final Topic<?> topic) {
     subscriberEntriesById.values().stream()
-        .filter(it -> it.topicMatcher.matches(topic))
-        .forEach(it -> it.subscriber.topicChanged(topic));
+        .filter(subscriberEntry -> subscriberEntry.topicMatcher.matches(topic))
+        .forEach(subscriberEntry -> subscriberEntry.subscriber.topicChanged(topic));
   }
 
   void publish(final PublisherId publisherId, final Object value) {
     // FIXME: need to be able to detect cycles and abort them
     Optional.ofNullable(publisherEntriesById.get(publisherId)).ifPresentOrElse(
-        publisherEntry -> notifySubscribers(publisherEntry.topic),
+        publisherEntry -> notifySubscribersForTopic(publisherEntry.topic),
         () -> logger.warning("attempt to publish value by unregistered publisher (" + publisherId + ")"));
   }
 
@@ -46,9 +52,9 @@ final class DefaultBroker implements Broker {
     final PublisherId publisherId = PublisherId.newInstance();
     final P publisher = publisherFactory.newPublisher(value -> publish(publisherId, value));
     publisherEntriesById.put(publisherId, new PublisherEntry(topic));
-    // TODO: notify subscribers (maybe not because publisher current is not pushing
-    // a default value)
-    // need to consider how that's going to work
+    // TODO: this will eventually be removed because the VALUES have not
+    // actually changed because the publisher has not yet published.
+    notifySubscribersForTopic(topic);
     return new DefaultPublisherToken<>(this, publisherId, publisher);
   }
 
@@ -60,19 +66,23 @@ final class DefaultBroker implements Broker {
     final S subscriber = subscriberFactory.newSubscriber(new SubscriberContext() {
       // no methods
     });
-    subscriberEntriesById.put(subscriberId, new SubscriberEntry(subscriber, topicMatcher));
+    final SubscriberEntry subscriberEntry = new SubscriberEntry(subscriber, topicMatcher);
+    subscriberEntriesById.put(subscriberId, subscriberEntry);
+    // TODO: requires further investigation... we're firing an event before
+    // the caller has had a chance to do anything with the token. that may
+    // prevent the ultimate destination from receiving the event...?
+    notifySubscriberForAllMatchingTopics(subscriberEntry);
     return new DefaultSubscriberToken<>(this, subscriberId, subscriber);
   }
 
   void unregisterPublisher(final PublisherId publisherId) {
-    if (publisherEntriesById.remove(publisherId) == null) {
-      logger.warning("attempt to unregister unregistered publisher (" + publisherId + ")");
-    }
-    // TODO: notify subscribers
+    Optional.ofNullable(publisherEntriesById.remove(publisherId)).ifPresentOrElse(
+        publisherEntry -> notifySubscribersForTopic(publisherEntry.topic),
+        () -> logger.warning("attempt to unregister unregistered publisher (" + publisherId + ")"));
   }
 
   void unregisterSubscriber(final SubscriberId subscriberId) {
-    if (subscriberEntriesById.remove(subscriberId) == null) {
+    if (!Optional.ofNullable(subscriberEntriesById.remove(subscriberId)).isPresent()) {
       logger.warning("attempt to unregister unregistered subscriber (" + subscriberId + ")");
     }
   }
