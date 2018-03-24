@@ -51,122 +51,6 @@ public abstract class AbstractBrokerTestCase {
     return broker.registerSubscriber(TopicMatcher.forTopics(topic1, otherTopics), subscriberFactory);
   }
 
-  private void when(final Runnable action) {
-    clearInvocations(subscriber);
-    action.run();
-  }
-
-  private void thenSubscriberShouldBeNotifiedOfTopicChanges(final @NonNull Topic<?>... topics) {
-    verify(subscriber).topicsChanged(ImmutableSet.copyOf(topics));
-  }
-
-  private void thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges() {
-    verify(subscriber, never()).topicsChanged(any());
-  }
-
-  @Test
-  public final void shouldNotifySubscriberUponRegistrationWhenMatchingTopicIsCurrentlyPublished() {
-    registerPublisher(TOPIC_1);
-    registerPublisher(TOPIC_2);
-
-    when(() -> registerSubscriber(TOPIC_1, TOPIC_2));
-
-    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1, TOPIC_2);
-  }
-
-  @Test
-  public final void shouldNotNotifySubscriberUponRegistrationWhenMatchingTopicIsNotCurrentlyPublished() {
-    registerPublisher(TOPIC_1);
-
-    when(() -> registerSubscriber(TOPIC_2));
-
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
-  }
-
-  @Test
-  public final void shouldNotifySubscriberWhenMatchingTopicChanged() {
-    final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
-    registerSubscriber(TOPIC_1);
-
-    when(() -> publisherToken.getPublisher().publish(42));
-
-    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
-  }
-
-  @Test
-  public final void shouldNotNotifySubscriberWhenNonMatchingTopicChanged() {
-    final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
-    registerSubscriber(TOPIC_2);
-
-    when(() -> publisherToken.getPublisher().publish(42));
-
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
-  }
-
-  @Test
-  public final void shouldNotifySubscriberWhenMatchingTopicIsPublished() {
-    registerSubscriber(TOPIC_1);
-
-    when(() -> registerPublisher(TOPIC_1));
-
-    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
-  }
-
-  @Test
-  public final void shouldNotNotifySubscriberWhenNonMatchingTopicIsPublished() {
-    registerSubscriber(TOPIC_1);
-
-    when(() -> registerPublisher(TOPIC_2));
-
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
-  }
-
-  @Test
-  public final void shouldNotifySubscriberWhenMatchingTopicIsUnpublished() {
-    final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
-    registerSubscriber(TOPIC_1);
-
-    when(() -> publisherToken.unregister());
-
-    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
-  }
-
-  @Test
-  public final void shouldNotNotifySubscriberWhenNonMatchingTopicIsUnpublished() {
-    final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
-    registerSubscriber(TOPIC_2);
-
-    when(() -> publisherToken.unregister());
-
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
-  }
-
-  @Test
-  public final void shouldNotNotifySubscriberWhenMatchingTopicChangedByUnregisteredPublisher() {
-    final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
-    registerSubscriber(TOPIC_1);
-
-    when(() -> {
-      publisherToken.unregister();
-      publisherToken.getPublisher().publish(42);
-    });
-
-    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
-  }
-
-  @Test
-  public final void shouldNotNotifyUnregisteredSubscriberWhenMatchingTopicChanged() {
-    final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
-    final SubscriberToken<Subscriber> subscriberToken = registerSubscriber(TOPIC_1);
-
-    when(() -> {
-      subscriberToken.unregister();
-      publisherToken.getPublisher().publish(42);
-    });
-
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
-  }
-
   @Nested
   public final class SubscriberContractTest {
     @Captor
@@ -199,6 +83,125 @@ public abstract class AbstractBrokerTestCase {
       registerSubscriber(TOPIC_1);
 
       thenTopicsPassedInNotificationShouldBeImmutable();
+    }
+  }
+
+  @Nested
+  public final class SubscriberNotificationTest {
+    private void when(final Runnable action) {
+      clearInvocations(subscriber);
+      action.run();
+    }
+
+    private void thenSubscriberShouldBeNotifiedOfTopicChanges(final @NonNull Topic<?>... topics) {
+      verify(subscriber).topicsChanged(ImmutableSet.copyOf(topics));
+    }
+
+    private void thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges() {
+      verify(subscriber, never()).topicsChanged(any());
+    }
+
+    @Test
+    public void shouldNotifySubscriberUponRegistrationWhenMatchingTopicIsCurrentlyPublished() {
+      registerPublisher(TOPIC_1);
+      registerPublisher(TOPIC_2);
+
+      when(() -> registerSubscriber(TOPIC_1, TOPIC_2));
+
+      thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1, TOPIC_2);
+    }
+
+    @Test
+    public void shouldNotNotifySubscriberUponRegistrationWhenMatchingTopicIsNotCurrentlyPublished() {
+      registerPublisher(TOPIC_1);
+
+      when(() -> registerSubscriber(TOPIC_2));
+
+      thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
+    }
+
+    @Test
+    public void shouldNotifySubscriberWhenMatchingTopicChanged() {
+      final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
+      registerSubscriber(TOPIC_1);
+
+      when(() -> publisherToken.getPublisher().publish(42));
+
+      thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
+    }
+
+    @Test
+    public void shouldNotNotifySubscriberWhenNonMatchingTopicChanged() {
+      final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
+      registerSubscriber(TOPIC_2);
+
+      when(() -> publisherToken.getPublisher().publish(42));
+
+      thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
+    }
+
+    @Test
+    public void shouldNotifySubscriberWhenMatchingTopicIsPublished() {
+      registerSubscriber(TOPIC_1);
+
+      when(() -> registerPublisher(TOPIC_1));
+
+      thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
+    }
+
+    @Test
+    public void shouldNotNotifySubscriberWhenNonMatchingTopicIsPublished() {
+      registerSubscriber(TOPIC_1);
+
+      when(() -> registerPublisher(TOPIC_2));
+
+      thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
+    }
+
+    @Test
+    public void shouldNotifySubscriberWhenMatchingTopicIsUnpublished() {
+      final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
+      registerSubscriber(TOPIC_1);
+
+      when(() -> publisherToken.unregister());
+
+      thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
+    }
+
+    @Test
+    public void shouldNotNotifySubscriberWhenNonMatchingTopicIsUnpublished() {
+      final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
+      registerSubscriber(TOPIC_2);
+
+      when(() -> publisherToken.unregister());
+
+      thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
+    }
+
+    @Test
+    public void shouldNotNotifySubscriberWhenMatchingTopicChangedByUnregisteredPublisher() {
+      final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
+      registerSubscriber(TOPIC_1);
+
+      when(() -> {
+        publisherToken.unregister();
+        publisherToken.getPublisher().publish(42);
+      });
+
+      thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
+    }
+
+    @Test
+    public void shouldNotNotifyUnregisteredSubscriberWhenMatchingTopicChanged() {
+      final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
+      final SubscriberToken<Subscriber> subscriberToken = registerSubscriber(TOPIC_1);
+
+      when(() -> {
+        subscriberToken.unregister();
+        publisherToken.getPublisher().publish(42);
+      });
+
+      thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
     }
   }
 }
