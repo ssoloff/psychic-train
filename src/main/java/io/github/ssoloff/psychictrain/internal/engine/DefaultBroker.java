@@ -3,11 +3,15 @@ package io.github.ssoloff.psychictrain.internal.engine;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.annotation.concurrent.Immutable;
 
 import org.eclipse.jdt.annotation.NonNull;
+
+import com.google.common.collect.ImmutableSet;
 
 import io.github.ssoloff.psychictrain.api.engine.Broker;
 import io.github.ssoloff.psychictrain.api.engine.Publisher;
@@ -27,15 +31,20 @@ final class DefaultBroker implements Broker {
   private final Map<SubscriberId, SubscriberEntry> subscriberEntriesById = new IdentityHashMap<>();
 
   private void notifySubscriberForAllMatchingTopics(final SubscriberEntry subscriberEntry) {
-    publisherEntriesById.values().stream()
-        .filter(publisherEntry -> subscriberEntry.topicMatcher.matches(publisherEntry.topic))
-        .forEach(publisherEntry -> subscriberEntry.subscriber.topicChanged(publisherEntry.topic));
+    final Set<Topic<?>> topics = ImmutableSet.copyOf(publisherEntriesById.values().stream()
+        .map(publisherEntry -> publisherEntry.topic)
+        .filter(subscriberEntry.topicMatcher::matches)
+        .collect(Collectors.toSet()));
+    if (!topics.isEmpty()) {
+      subscriberEntry.subscriber.topicsChanged(topics);
+    }
   }
 
   private void notifySubscribersForTopic(final Topic<?> topic) {
+    final Set<Topic<?>> topics = ImmutableSet.of(topic);
     subscriberEntriesById.values().stream()
         .filter(subscriberEntry -> subscriberEntry.topicMatcher.matches(topic))
-        .forEach(subscriberEntry -> subscriberEntry.subscriber.topicChanged(topic));
+        .forEach(subscriberEntry -> subscriberEntry.subscriber.topicsChanged(topics));
   }
 
   void publish(final PublisherId publisherId, final Object value) {

@@ -1,5 +1,7 @@
 package io.github.ssoloff.psychictrain.api.engine;
 
+import java.util.Set;
+
 public interface Subscriber {
-  void topicChanged(Topic<?> topic);
+  void topicsChanged(Set<Topic<?>> topics);
 }

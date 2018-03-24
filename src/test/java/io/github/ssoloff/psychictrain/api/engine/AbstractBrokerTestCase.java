@@ -1,18 +1,27 @@
 package io.github.ssoloff.psychictrain.api.engine;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+
+import java.util.Set;
 
 import javax.inject.Inject;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 
 import com.example.mockito.MockitoExtension;
+import com.google.common.collect.ImmutableSet;
 
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractBrokerTestCase {
@@ -47,12 +56,12 @@ public abstract class AbstractBrokerTestCase {
     action.run();
   }
 
-  private void thenSubscriberShouldBeNotifiedOfTopicChange(final Topic<?> topic) {
-    verify(subscriber).topicChanged(topic);
+  private void thenSubscriberShouldBeNotifiedOfTopicChanges(final @NonNull Topic<?>... topics) {
+    verify(subscriber).topicsChanged(ImmutableSet.copyOf(topics));
   }
 
-  private void thenSubscriberShouldNotBeNotifiedOfAnyTopicChange() {
-    verify(subscriber, never()).topicChanged(any(Topic.class));
+  private void thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges() {
+    verify(subscriber, never()).topicsChanged(any());
   }
 
   @Test
@@ -62,8 +71,7 @@ public abstract class AbstractBrokerTestCase {
 
     when(() -> registerSubscriber(TOPIC_1, TOPIC_2));
 
-    thenSubscriberShouldBeNotifiedOfTopicChange(TOPIC_1);
-    thenSubscriberShouldBeNotifiedOfTopicChange(TOPIC_2);
+    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1, TOPIC_2);
   }
 
   @Test
@@ -72,7 +80,7 @@ public abstract class AbstractBrokerTestCase {
 
     when(() -> registerSubscriber(TOPIC_2));
 
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChange();
+    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
   }
 
   @Test
@@ -82,7 +90,7 @@ public abstract class AbstractBrokerTestCase {
 
     when(() -> publisherToken.getPublisher().publish(42));
 
-    thenSubscriberShouldBeNotifiedOfTopicChange(TOPIC_1);
+    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
   }
 
   @Test
@@ -92,7 +100,7 @@ public abstract class AbstractBrokerTestCase {
 
     when(() -> publisherToken.getPublisher().publish(42));
 
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChange();
+    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
   }
 
   @Test
@@ -101,7 +109,7 @@ public abstract class AbstractBrokerTestCase {
 
     when(() -> registerPublisher(TOPIC_1));
 
-    thenSubscriberShouldBeNotifiedOfTopicChange(TOPIC_1);
+    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
   }
 
   @Test
@@ -110,7 +118,7 @@ public abstract class AbstractBrokerTestCase {
 
     when(() -> registerPublisher(TOPIC_2));
 
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChange();
+    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
   }
 
   @Test
@@ -120,7 +128,7 @@ public abstract class AbstractBrokerTestCase {
 
     when(() -> publisherToken.unregister());
 
-    thenSubscriberShouldBeNotifiedOfTopicChange(TOPIC_1);
+    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
   }
 
   @Test
@@ -130,7 +138,7 @@ public abstract class AbstractBrokerTestCase {
 
     when(() -> publisherToken.unregister());
 
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChange();
+    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
   }
 
   @Test
@@ -143,7 +151,7 @@ public abstract class AbstractBrokerTestCase {
       publisherToken.getPublisher().publish(42);
     });
 
-    thenSubscriberShouldBeNotifiedOfTopicChange(TOPIC_1);
+    thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
   }
 
   @Test
@@ -156,6 +164,41 @@ public abstract class AbstractBrokerTestCase {
       publisherToken.getPublisher().publish(42);
     });
 
-    thenSubscriberShouldNotBeNotifiedOfAnyTopicChange();
+    thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
+  }
+
+  @Nested
+  public final class SubscriberContractTest {
+    @Captor
+    @Inject
+    private ArgumentCaptor<Set<Topic<?>>> topicsCaptor;
+
+    private void thenTopicsPassedInNotificationShouldBeImmutable() {
+      assertThrows(UnsupportedOperationException.class, () -> topicsCaptor.getValue().clear());
+    }
+
+    @BeforeEach
+    public void initializeSubscriber() {
+      doNothing().when(subscriber).topicsChanged(topicsCaptor.capture());
+    }
+
+    @Test
+    public void shouldPassImmutableSetUponNormalTopicsChangedNotification() {
+      final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
+      registerSubscriber(TOPIC_1);
+
+      publisherToken.getPublisher().publish(42);
+
+      thenTopicsPassedInNotificationShouldBeImmutable();
+    }
+
+    @Test
+    public void shouldPassImmutableSetUponRegistrationTopicsChangedNotification() {
+      registerPublisher(TOPIC_1);
+
+      registerSubscriber(TOPIC_1);
+
+      thenTopicsPassedInNotificationShouldBeImmutable();
+    }
   }
 }
