@@ -19,8 +19,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.example.mockito.MockitoExtension;
 import com.google.common.collect.ImmutableSet;
 
 @ExtendWith(MockitoExtension.class)
