@@ -1,5 +1,6 @@
 package io.github.ssoloff.psychictrain.internal.engine;
 
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -11,7 +12,10 @@ import javax.annotation.concurrent.Immutable;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 
 import io.github.ssoloff.psychictrain.api.engine.Broker;
 import io.github.ssoloff.psychictrain.api.engine.Publisher;
@@ -30,27 +34,63 @@ final class DefaultBroker implements Broker {
   private final Map<PublisherId, PublisherEntry> publisherEntriesById = new IdentityHashMap<>();
   private final Map<SubscriberId, SubscriberEntry> subscriberEntriesById = new IdentityHashMap<>();
 
+  private Multimap<Topic<?>, ?> getValuesForMatchingTopics(final SubscriberId subscriberId) {
+    final ImmutableMultimap.Builder<Topic<?>, Object> valuesByTopicBuilder = ImmutableMultimap.builder();
+    Optional.ofNullable(subscriberEntriesById.get(subscriberId)).ifPresentOrElse(
+        subscriberEntry -> publisherEntriesById.values().stream()
+            .filter(publisherEntry -> subscriberEntry.matches(publisherEntry.getTopic()))
+            .filter(PublisherEntry::hasValue)
+            .forEach(publisherEntry -> valuesByTopicBuilder.put(publisherEntry.getTopic(), publisherEntry.getValue())),
+        () -> logger.warning("attempt to retrieve values by unregistered subscriber (" + subscriberId + ")"));
+    return valuesByTopicBuilder.build();
+  }
+
+  private <@NonNull T> Collection<T> getValuesForTopic(final Topic<T> topic) {
+    return ImmutableList.copyOf(publisherEntriesById.values().stream()
+        .filter(publisherEntry -> publisherEntry.matches(topic))
+        .filter(PublisherEntry::hasValue)
+        .map(PublisherEntry::<T>getValue)
+        .collect(Collectors.toList()));
+  }
+
+  private SubscriberContext newSubscriberContext(final SubscriberId subscriberId) {
+    return new SubscriberContext() {
+      @Override
+      public Multimap<Topic<?>, ?> getValuesForMatchingTopics() {
+        return DefaultBroker.this.getValuesForMatchingTopics(subscriberId);
+      }
+
+      @Override
+      public <@NonNull T> Collection<T> getValuesForTopic(final Topic<T> topic) {
+        return DefaultBroker.this.getValuesForTopic(topic);
+      }
+    };
+  }
+
   private void notifySubscriberForAllMatchingTopics(final SubscriberEntry subscriberEntry) {
     final Set<Topic<?>> topics = ImmutableSet.copyOf(publisherEntriesById.values().stream()
-        .map(publisherEntry -> publisherEntry.topic)
-        .filter(subscriberEntry.topicMatcher::matches)
+        .filter(publisherEntry -> subscriberEntry.matches(publisherEntry.getTopic()))
+        .map(PublisherEntry::getTopic)
         .collect(Collectors.toSet()));
     if (!topics.isEmpty()) {
-      subscriberEntry.subscriber.topicsChanged(topics);
+      subscriberEntry.notifySubscriberTopicsChanged(topics);
     }
   }
 
   private void notifySubscribersForTopic(final Topic<?> topic) {
     final Set<Topic<?>> topics = ImmutableSet.of(topic);
     subscriberEntriesById.values().stream()
-        .filter(subscriberEntry -> subscriberEntry.topicMatcher.matches(topic))
-        .forEach(subscriberEntry -> subscriberEntry.subscriber.topicsChanged(topics));
+        .filter(subscriberEntry -> subscriberEntry.matches(topic))
+        .forEach(subscriberEntry -> subscriberEntry.notifySubscriberTopicsChanged(topics));
   }
 
   void publish(final PublisherId publisherId, final Object value) {
     // FIXME: need to be able to detect cycles and abort them
     Optional.ofNullable(publisherEntriesById.get(publisherId)).ifPresentOrElse(
-        publisherEntry -> notifySubscribersForTopic(publisherEntry.topic),
+        publisherEntry -> {
+          publisherEntry.setValue(value);
+          notifySubscribersForTopic(publisherEntry.getTopic());
+        },
         () -> logger.warning("attempt to publish value by unregistered publisher (" + publisherId + ")"));
   }
 
@@ -72,9 +112,7 @@ final class DefaultBroker implements Broker {
       final TopicMatcher topicMatcher,
       final SubscriberFactory<S> subscriberFactory) {
     final SubscriberId subscriberId = SubscriberId.newInstance();
-    final S subscriber = subscriberFactory.newSubscriber(new SubscriberContext() {
-      // no methods
-    });
+    final S subscriber = subscriberFactory.newSubscriber(newSubscriberContext(subscriberId));
     final SubscriberEntry subscriberEntry = new SubscriberEntry(subscriber, topicMatcher);
     subscriberEntriesById.put(subscriberId, subscriberEntry);
     // TODO: requires further investigation... we're firing an event before
@@ -86,7 +124,7 @@ final class DefaultBroker implements Broker {
 
   void unregisterPublisher(final PublisherId publisherId) {
     Optional.ofNullable(publisherEntriesById.remove(publisherId)).ifPresentOrElse(
-        publisherEntry -> notifySubscribersForTopic(publisherEntry.topic),
+        publisherEntry -> notifySubscribersForTopic(publisherEntry.getTopic()),
         () -> logger.warning("attempt to unregister unregistered publisher (" + publisherId + ")"));
   }
 
@@ -96,23 +134,58 @@ final class DefaultBroker implements Broker {
     }
   }
 
-  @Immutable
   private static final class PublisherEntry {
-    final Topic<?> topic;
+    private static final Object INITIAL_VALUE = new Object();
+
+    private final Topic<?> topic;
+    private Object value = INITIAL_VALUE;
 
     PublisherEntry(final Topic<?> topic) {
       this.topic = topic;
+    }
+
+    Topic<?> getTopic() {
+      return topic;
+    }
+
+    <@NonNull T> T getValue() {
+      assert value != INITIAL_VALUE;
+
+      @SuppressWarnings("unchecked")
+      final T typedValue = (T) value;
+      return typedValue;
+    }
+
+    boolean hasValue() {
+      return value != INITIAL_VALUE;
+    }
+
+    boolean matches(final Topic<?> otherTopic) {
+      return this.topic.equals(otherTopic);
+    }
+
+    void setValue(final Object value) {
+      topic.getTypeToken().getRawType().cast(value);
+      this.value = value;
     }
   }
 
   @Immutable
   private static final class SubscriberEntry {
-    final Subscriber subscriber;
-    final TopicMatcher topicMatcher;
+    private final Subscriber subscriber;
+    private final TopicMatcher topicMatcher;
 
     SubscriberEntry(final Subscriber subscriber, final TopicMatcher topicMatcher) {
       this.subscriber = subscriber;
       this.topicMatcher = topicMatcher;
+    }
+
+    boolean matches(final Topic<?> topic) {
+      return topicMatcher.matches(topic);
+    }
+
+    void notifySubscriberTopicsChanged(final Set<Topic<?>> topics) {
+      subscriber.topicsChanged(topics);
     }
   }
 }

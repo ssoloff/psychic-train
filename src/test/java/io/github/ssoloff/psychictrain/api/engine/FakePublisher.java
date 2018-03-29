@@ -11,8 +11,12 @@ import org.eclipse.jdt.annotation.NonNull;
 public final class FakePublisher<@NonNull T> implements Publisher {
   private final PublisherContext context;
 
-  public FakePublisher(final PublisherContext context) {
+  private FakePublisher(final PublisherContext context) {
     this.context = context;
+  }
+
+  public PublisherContext getContext() {
+    return context;
   }
 
   public static <@NonNull T> PublisherFactory<FakePublisher<T>> newFactory() {

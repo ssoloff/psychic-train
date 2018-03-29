@@ -1,0 +1,4 @@
+class com/google/common/collect/ImmutableMultimap$Builder
+build
+ ()Lcom/google/common/collect/ImmutableMultimap<TK;TV;>;
+ ()L1com/google/common/collect/ImmutableMultimap<TK;TV;>;
