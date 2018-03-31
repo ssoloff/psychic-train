@@ -8,8 +8,6 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import javax.annotation.concurrent.Immutable;
-
 import org.eclipse.jdt.annotation.NonNull;
 
 import com.google.common.collect.ImmutableList;
@@ -128,61 +126,6 @@ final class DefaultBroker implements Broker {
   void unregisterSubscriber(final SubscriberId subscriberId) {
     if (!Optional.ofNullable(subscriberEntriesById.remove(subscriberId)).isPresent()) {
       logger.warning("attempt to unregister unregistered subscriber (" + subscriberId + ")");
-    }
-  }
-
-  private static final class PublisherEntry {
-    private static final Object NO_VALUE = new Object();
-
-    private final Topic<?> topic;
-    private Object value = NO_VALUE;
-
-    PublisherEntry(final Topic<?> topic) {
-      this.topic = topic;
-    }
-
-    Topic<?> getTopic() {
-      return topic;
-    }
-
-    <@NonNull T> T getValue() {
-      assert value != NO_VALUE;
-
-      @SuppressWarnings("unchecked")
-      final T typedValue = (T) value;
-      return typedValue;
-    }
-
-    boolean hasValue() {
-      return value != NO_VALUE;
-    }
-
-    boolean matches(final Topic<?> otherTopic) {
-      return this.topic.equals(otherTopic);
-    }
-
-    void setValue(final Object value) {
-      topic.getTypeToken().getRawType().cast(value);
-      this.value = value;
-    }
-  }
-
-  @Immutable
-  private static final class SubscriberEntry {
-    private final Subscriber subscriber;
-    private final TopicMatcher topicMatcher;
-
-    SubscriberEntry(final Subscriber subscriber, final TopicMatcher topicMatcher) {
-      this.subscriber = subscriber;
-      this.topicMatcher = topicMatcher;
-    }
-
-    boolean matches(final Topic<?> topic) {
-      return topicMatcher.matches(topic);
-    }
-
-    void notifySubscriberTopicsChanged(final Set<Topic<?>> topics) {
-      subscriber.topicsChanged(topics);
     }
   }
 }
