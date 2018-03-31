@@ -101,9 +101,6 @@ final class DefaultBroker implements Broker {
     final PublisherId publisherId = PublisherId.newInstance();
     final P publisher = publisherFactory.newPublisher(value -> publish(publisherId, value));
     publisherEntriesById.put(publisherId, new PublisherEntry(topic));
-    // TODO: this will eventually be removed because the VALUES have not
-    // actually changed because the publisher has not yet published.
-    notifySubscribersForTopic(topic);
     return new DefaultPublisherToken<>(this, publisherId, publisher);
   }
 

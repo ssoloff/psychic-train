@@ -249,12 +249,12 @@ public abstract class AbstractBrokerTestCase {
     }
 
     @Test
-    public void shouldNotifySubscriberWhenMatchingTopicIsPublished() {
+    public void shouldNotNotifySubscriberWhenMatchingTopicIsPublished() {
       registerSubscriber(TOPIC_1);
 
       when(() -> registerPublisher(TOPIC_1));
 
-      thenSubscriberShouldBeNotifiedOfTopicChanges(TOPIC_1);
+      thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
     }
 
     @Test
