@@ -132,10 +132,10 @@ final class DefaultBroker implements Broker {
   }
 
   private static final class PublisherEntry {
-    private static final Object INITIAL_VALUE = new Object();
+    private static final Object NO_VALUE = new Object();
 
     private final Topic<?> topic;
-    private Object value = INITIAL_VALUE;
+    private Object value = NO_VALUE;
 
     PublisherEntry(final Topic<?> topic) {
       this.topic = topic;
@@ -146,7 +146,7 @@ final class DefaultBroker implements Broker {
     }
 
     <@NonNull T> T getValue() {
-      assert value != INITIAL_VALUE;
+      assert value != NO_VALUE;
 
       @SuppressWarnings("unchecked")
       final T typedValue = (T) value;
@@ -154,7 +154,7 @@ final class DefaultBroker implements Broker {
     }
 
     boolean hasValue() {
-      return value != INITIAL_VALUE;
+      return value != NO_VALUE;
     }
 
     boolean matches(final Topic<?> otherTopic) {
