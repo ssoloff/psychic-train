@@ -2,12 +2,14 @@ package io.github.ssoloff.psychictrain.api.engine;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,6 +32,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+
+import io.github.ssoloff.psychictrain.internal.util.None;
 
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractBrokerTestCase {
@@ -196,6 +200,13 @@ public abstract class AbstractBrokerTestCase {
 
   @Nested
   public final class SubscriberNotificationTest {
+    private void givenSubscriberAction(final Runnable action) {
+      doAnswer(invocation -> {
+        action.run();
+        return None.INSTANCE;
+      }).when(topicsChangedConsumer).accept(any());
+    }
+
     private void when(final Runnable action) {
       clearInvocations(new Object[] { topicsChangedConsumer });
       action.run();
@@ -310,6 +321,16 @@ public abstract class AbstractBrokerTestCase {
       });
 
       thenSubscriberShouldNotBeNotifiedOfAnyTopicChanges();
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenCyclePresent() {
+      final PublisherToken<FakePublisher<Integer>> publisherToken = registerPublisher(TOPIC_1);
+      registerSubscriber(TOPIC_1);
+      givenSubscriberAction(() -> publisherToken.getPublisher().publish(2112));
+
+      final Exception e = assertThrows(IllegalStateException.class, () -> publisherToken.getPublisher().publish(42));
+      assertThat(e.getMessage(), containsStringIgnoringCase("cycle"));
     }
   }
 }

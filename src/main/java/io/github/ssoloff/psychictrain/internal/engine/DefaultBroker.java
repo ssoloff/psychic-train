@@ -1,6 +1,9 @@
 package io.github.ssoloff.psychictrain.internal.engine;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +32,7 @@ import io.github.ssoloff.psychictrain.api.engine.TopicMatcher;
 final class DefaultBroker implements Broker {
   private static final Logger logger = Logger.getLogger(DefaultBroker.class.getName());
 
+  private final Set<Topic<?>> inFlightTopics = new HashSet<>();
   private final Map<PublisherId, PublisherEntry> publisherEntriesById = new IdentityHashMap<>();
   private final Map<SubscriberId, SubscriberEntry> subscriberEntriesById = new IdentityHashMap<>();
 
@@ -83,13 +87,19 @@ final class DefaultBroker implements Broker {
   }
 
   void publish(final PublisherId publisherId, final Object value) {
-    // FIXME: need to be able to detect cycles and abort them
     Optional.ofNullable(publisherEntriesById.get(publisherId)).ifPresentOrElse(
-        publisherEntry -> {
-          publisherEntry.setValue(value);
-          notifySubscribersForTopic(publisherEntry.getTopic());
-        },
+        publisherEntry -> publish(publisherEntry, value),
         () -> logger.warning("attempt to publish value by unregistered publisher (" + publisherId + ")"));
+  }
+
+  private void publish(final PublisherEntry publisherEntry, final Object value) {
+    final Topic<?> topic = publisherEntry.getTopic();
+    checkState(!inFlightTopics.contains(topic), "cycle detected during publication of topic '" + topic + "'");
+
+    inFlightTopics.add(topic);
+    publisherEntry.setValue(value);
+    notifySubscribersForTopic(topic);
+    inFlightTopics.remove(topic);
   }
 
   @Override
